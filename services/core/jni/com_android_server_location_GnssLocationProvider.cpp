@@ -58,6 +58,9 @@
 #include <string.h>
 #include <utils/SystemClock.h>
 
+
+#undef NDEBUG
+
 static jclass class_location;
 static jclass class_gnssNavigationMessage;
 static jclass class_gnssAntennaInfoBuilder;
@@ -274,15 +277,15 @@ namespace android {
 namespace {
 
 // Returns true if location has lat/long information.
-bool hasLatLong(const GnssLocation_V1_0& location) {
-    return (static_cast<uint32_t>(location.gnssLocationFlags) &
-            GnssLocationFlags::HAS_LAT_LONG) != 0;
-}
+//bool hasLatLong(const GnssLocation_V1_0& location) {
+//    return (static_cast<uint32_t>(location.gnssLocationFlags) &
+//            GnssLocationFlags::HAS_LAT_LONG) != 0;
+//}
 
 // Returns true if location has lat/long information.
-bool hasLatLong(const GnssLocation_V2_0& location) {
-    return hasLatLong(location.v1_0);
-}
+//bool hasLatLong(const GnssLocation_V2_0& location) {
+//    return hasLatLong(location.v1_0);
+//}
 
 }  // namespace
 
@@ -322,32 +325,51 @@ static jobject translateGnssLocation(JNIEnv* env,
                                      const GnssLocation_V1_0& location) {
     JavaObject object(env, class_location, method_locationCtor, "gps");
 
-    uint16_t flags = static_cast<uint32_t>(location.gnssLocationFlags);
-    if (flags & GnssLocationFlags::HAS_LAT_LONG) {
+	ALOGV("-----translateGnssLocation-----");
+
+    //uint16_t flags = static_cast<uint32_t>(location.gnssLocationFlags);
+    /*if (flags & GnssLocationFlags::HAS_LAT_LONG) {
         SET(Latitude, location.latitudeDegrees);
         SET(Longitude, location.longitudeDegrees);
-    }
-    if (flags & GnssLocationFlags::HAS_ALTITUDE) {
+    }*/
+    
+    SET(Latitude, 22.532324);
+    SET(Longitude, 113.936638);
+    /*if (flags & GnssLocationFlags::HAS_ALTITUDE) {
         SET(Altitude, location.altitudeMeters);
+		ALOGV("translateGnssLocation,altitudeMeters :%f", location.altitudeMeters);
     }
     if (flags & GnssLocationFlags::HAS_SPEED) {
         SET(Speed, location.speedMetersPerSec);
+		ALOGV("translateGnssLocation,speedMetersPerSec :%f", location.speedMetersPerSec);
     }
     if (flags & GnssLocationFlags::HAS_BEARING) {
         SET(Bearing, location.bearingDegrees);
+		ALOGV("translateGnssLocation,bearingDegrees :%f", location.bearingDegrees);
     }
     if (flags & GnssLocationFlags::HAS_HORIZONTAL_ACCURACY) {
         SET(Accuracy, location.horizontalAccuracyMeters);
+		ALOGV("translateGnssLocation,horizontalAccuracyMeters :%f", location.horizontalAccuracyMeters);
     }
     if (flags & GnssLocationFlags::HAS_VERTICAL_ACCURACY) {
         SET(VerticalAccuracyMeters, location.verticalAccuracyMeters);
+		ALOGV("translateGnssLocation,verticalAccuracyMeters :%f", location.verticalAccuracyMeters);
     }
     if (flags & GnssLocationFlags::HAS_SPEED_ACCURACY) {
         SET(SpeedAccuracyMetersPerSecond, location.speedAccuracyMetersPerSecond);
+		ALOGV("translateGnssLocation,speedAccuracyMetersPerSecond :%f", location.speedAccuracyMetersPerSecond);
     }
     if (flags & GnssLocationFlags::HAS_BEARING_ACCURACY) {
         SET(BearingAccuracyDegrees, location.bearingAccuracyDegrees);
-    }
+		ALOGV("translateGnssLocation,bearingAccuracyDegrees :%f", location.bearingAccuracyDegrees);
+    }*/
+    SET(Altitude, 14.691054);
+    SET(Speed, 0.000000f);
+	SET(Accuracy, 24.000000f);
+	SET(VerticalAccuracyMeters, 34.012081f);
+	SET(SpeedAccuracyMetersPerSecond, 20.000000f);
+
+	
     SET(Time, location.timestamp);
     SET(ElapsedRealtimeNanos, android::elapsedRealtimeNano());
 
@@ -531,24 +553,50 @@ size_t GnssCallback::sNmeaStringLength = 0;
 template<class T>
 Return<void> GnssCallback::gnssLocationCbImpl(const T& location) {
     JNIEnv* env = getJniEnv();
+	ALOGV("-----gnssLocationCbImpl-----");
 
     jobject jLocation = translateGnssLocation(env, location);
 
     env->CallVoidMethod(mCallbacksObj,
                         method_reportLocation,
-                        boolToJbool(hasLatLong(location)),
+                        boolToJbool(true),
                         jLocation);
+	 
     checkAndClearExceptionFromCallback(env, __FUNCTION__);
     env->DeleteLocalRef(jLocation);
     return Void();
 }
 
+
+
+void reportLocation() {
+    JNIEnv* env = getJniEnv();
+	ALOGV("-----reportLocation-----");
+	GnssLocation_V1_0 location;
+
+    jobject jLocation = translateGnssLocation(env, location);
+
+    env->CallVoidMethod(mCallbacksObj,
+                        method_reportLocation,
+                        boolToJbool(true),
+                        jLocation);
+	 
+    checkAndClearExceptionFromCallback(env, __FUNCTION__);
+    env->DeleteLocalRef(jLocation);
+ 
+}
+
+
 Return<void> GnssCallback::gnssLocationCb(const GnssLocation_V1_0& location) {
+	ALOGV("-----gnssLocationCb-----");
+
     return gnssLocationCbImpl<GnssLocation_V1_0>(location);
 }
 
 Return<void>
 GnssCallback::gnssLocationCb_2_0(const GnssLocation_V2_0& location) {
+	ALOGV("-----gnssLocationCb_2_0-----");
+
     return gnssLocationCbImpl<GnssLocation_V2_0>(location);
 }
 
@@ -571,11 +619,23 @@ double GnssCallback::getBasebandCn0DbHz(const hidl_vec<IGnssCallback_V2_1::GnssS
     return svInfoList[i].basebandCN0DbHz;
 }
 
+int RsvidWithFlags[7] = {78095,24847,82191,45327,99085,57615,20747};
+float Rcn0s[7] = {24.621044,35.020515,24.918541,32.476288,26.406982,18.711548,16.612274};
+float Relev[7] = {61.000000,48.000000,44.000000,39.000000,32.000000,23.000000,12.000000};
+float Razim[7] = {31.000000,  353.000000, 229.000000, 296.000000, 340.000000, 168.000000, 219.000000};
+float RcarrierFreq[7] = {1575449984.000000,1575449984.000000,1575449984.000000,1575449984.000000,1603124992.000000,1575449984.000000,1575449984.000000};
+float RbasebandCn0s[7];
+
 template<class T>
 Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
     JNIEnv* env = getJniEnv();
+	
+    uint32_t listSize = 7;//getGnssSvInfoListSize(svStatus);
+	reportLocation();
 
-    uint32_t listSize = getGnssSvInfoListSize(svStatus);
+	ALOGV("listSize %d \n", (int)listSize);
+
+	
 
     jintArray svidWithFlagArray = env->NewIntArray(listSize);
     jfloatArray cn0Array = env->NewFloatArray(listSize);
@@ -600,7 +660,18 @@ Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
             CONSTELLATION_TYPE_SHIFT_WIDTH = 8
         };
 
-        const IGnssCallback_V1_0::GnssSvInfo& info = getGnssSvInfoOfIndex(svStatus, i);
+        /*const IGnssCallback_V1_0::GnssSvInfo& info = getGnssSvInfoOfIndex(svStatus, i);
+        svidWithFlags[i] = (info.svid << SVID_SHIFT_WIDTH) |
+            (getConstellationType(svStatus, i) << CONSTELLATION_TYPE_SHIFT_WIDTH) |
+            static_cast<uint32_t>(info.svFlag);*/
+        svidWithFlags[i] = RsvidWithFlags[i];
+        cn0s[i] = Rcn0s[i];//info.cN0Dbhz;
+        elev[i] = Relev[i];//info.elevationDegrees;
+        azim[i] = Razim[i];//info.azimuthDegrees;
+        carrierFreq[i] = RcarrierFreq[i];//info.carrierFrequencyHz;
+        //svidWithFlags[i] |= 65535;//getHasBasebandCn0DbHzFlag(svStatus);
+        basebandCn0s[i] = RbasebandCn0s[i];//getBasebandCn0DbHz(svStatus, i);
+		/*const IGnssCallback_V1_0::GnssSvInfo& info = getGnssSvInfoOfIndex(svStatus, i);
         svidWithFlags[i] = (info.svid << SVID_SHIFT_WIDTH) |
             (getConstellationType(svStatus, i) << CONSTELLATION_TYPE_SHIFT_WIDTH) |
             static_cast<uint32_t>(info.svFlag);
@@ -609,7 +680,25 @@ Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
         azim[i] = info.azimuthDegrees;
         carrierFreq[i] = info.carrierFrequencyHz;
         svidWithFlags[i] |= getHasBasebandCn0DbHzFlag(svStatus);
-        basebandCn0s[i] = getBasebandCn0DbHz(svStatus, i);
+        basebandCn0s[i] = getBasebandCn0DbHz(svStatus, i);*/
+        
+		/*ALOGV("GPS_tag_svidWithFlags %d, %d\n", (int)i, svidWithFlags[i]);
+		ALOGV("GPS_tag_cn0s %d, %f\n", (int)i, info.cN0Dbhz);
+		ALOGV("GPS_tag_elev %d, %f\n", (int)i, info.elevationDegrees);
+		ALOGV("GPS_tag_azim %d, %f\n", (int)i, info.azimuthDegrees);
+		ALOGV("GPS_tag_carrierFreq %d, %f\n", (int)i, info.carrierFrequencyHz);
+		ALOGV("GPS_tag_basebandCn0s %d, %f\n", (int)i, basebandCn0s[i]);
+		if (i < 20) {
+			RsvidWithFlags[i] = (int)svidWithFlags[i];
+			Rcn0s[i] = cn0s[i];
+			Relev[i] = elev[i];
+			Razim[i] = azim[i];
+			RcarrierFreq[i] = carrierFreq[i];
+			RbasebandCn0s[i] = basebandCn0s[i];
+
+		}*/
+		
+		
     }
 
     env->ReleaseIntArrayElements(svidWithFlagArray, svidWithFlags, 0);
@@ -2109,8 +2198,9 @@ static jboolean android_location_gnss_hal_GnssNative_start(JNIEnv* /* env */, jc
     if (gnssHal == nullptr) {
         return JNI_FALSE;
     }
-
+    ALOGV("-----start-----");
     auto result = gnssHal->start();
+	reportLocation();
     return checkHidlReturn(result, "IGnss start() failed.");
 }
 
@@ -2118,7 +2208,51 @@ static jboolean android_location_gnss_hal_GnssNative_stop(JNIEnv* /* env */, jcl
     if (gnssHal == nullptr) {
         return JNI_FALSE;
     }
+    ALOGV("-----stop--2---\n");
+	/*int RsvidWithFlags[100];
+		float Rcn0s[100];
+		float Relev[100];
+		float Razim[100];
+		float RcarrierFreq[100];
+		float RbasebandCn0s[100]; */
 
+	/*ALOGV("GPS_tag_svidWithFlags %d, %d\n", (int)i, svidWithFlags[i]);
+		ALOGV("GPS_tag_cn0s %d, %f\n", (int)i, info.cN0Dbhz);
+		ALOGV("GPS_tag_elev %d, %f\n", (int)i, info.elevationDegrees);
+		ALOGV("GPS_tag_azim %d, %f\n", (int)i, info.azimuthDegrees);
+		ALOGV("GPS_tag_carrierFreq %d, %f\n", (int)i, info.carrierFrequencyHz);
+		ALOGV("GPS_tag_basebandCn0s %d, %f\n", (int)i, basebandCn0s[i]); */
+	int i = 0;
+	ALOGV("-----GPS_tag_svidWithFlags--2---\n");
+	for(i = 0; i < 20; i++) {
+		ALOGV("xxx: %d,", RsvidWithFlags[i]);
+	}
+
+	ALOGV("-----GPS_tag_cn0s----2-\n");
+	for(i = 0; i < 20; i++) {
+		ALOGV("%f,", Rcn0s[i]);
+	}
+
+	ALOGV("-----GPS_tag_elev---2--\n");
+	for(i = 0; i < 20; i++) {
+		ALOGV("%f,", Relev[i]);
+	}
+
+	ALOGV("-----GPS_tag_azim-----\n");
+	for(i = 0; i < 20; i++) {
+		ALOGV("%f,", Razim[i]);
+	}
+
+	ALOGV("-----GPS_tag_carrierFreq-----\n");
+	for(i = 0; i < 20; i++) {
+		ALOGV("%f,", RcarrierFreq[i]);
+	}
+
+	ALOGV("-----GPS_tag_basebandCn0s-----\n");
+	for(i = 0; i < 20; i++) {
+		ALOGV("%f,", RbasebandCn0s[i]);
+	}
+	
     auto result = gnssHal->stop();
     return checkHidlReturn(result, "IGnss stop() failed.");
 }

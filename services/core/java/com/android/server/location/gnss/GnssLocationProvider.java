@@ -128,8 +128,8 @@ public class GnssLocationProvider extends AbstractLocationProvider implements
 
     private static final String TAG = "GnssLocationProvider";
 
-    private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
-    private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
+    private static final boolean DEBUG = true; //Log.isLoggable(TAG, Log.DEBUG);
+    private static final boolean VERBOSE = true; //Log.isLoggable(TAG, Log.VERBOSE);
 
     private static final ProviderProperties PROPERTIES = new ProviderProperties.Builder()
                 .setHasSatelliteRequirement(true)
@@ -1162,9 +1162,10 @@ public class GnssLocationProvider extends AbstractLocationProvider implements
     }
 
     private void handleReportLocation(boolean hasLatLong, Location location) {
-        if (VERBOSE) Log.v(TAG, "reportLocation " + location.toString());
+        if (VERBOSE) Log.v(TAG, "reportLocation-2 " + location.toString());
 
         location.setExtras(mLocationExtras.getBundle());
+		location.makeComplete();
 
         reportLocation(LocationResult.wrap(location).validate());
 

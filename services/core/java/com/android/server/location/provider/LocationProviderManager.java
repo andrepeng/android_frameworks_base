@@ -1637,6 +1637,7 @@ public class LocationProviderManager extends
 
     public @Nullable Location getLastLocation(LastLocationRequest request,
             CallerIdentity identity, @PermissionLevel int permissionLevel) {
+            Log.d(TAG, "--getLastLocation--");
         if (!isActive(request.isBypass(), identity)) {
             return null;
         }
@@ -1647,18 +1648,21 @@ public class LocationProviderManager extends
             return null;
         }
 
-        Location location = getPermittedLocation(
+        /*Location location = getPermittedLocation(
                 getLastLocationUnsafe(
                         identity.getUserId(),
                         permissionLevel,
                         request.isBypass(),
                         Long.MAX_VALUE),
-                permissionLevel);
+                permissionLevel);*/
+        Location location = new Location("gps");
+		location.setLongitude(113.936638);
+		location.setLatitude(22.532324);
 
         if (location != null && identity.getPid() == Process.myPid()) {
             // if delivering to the same process, make a copy of the location first (since
             // location is mutable)
-            location = new Location(location);
+            //location = new Location(location);
         }
 
         return location;

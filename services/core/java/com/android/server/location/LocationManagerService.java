@@ -639,7 +639,7 @@ public class LocationManagerService extends ILocationManager.Stub implements
 
     @Override
     public String getBestProvider(Criteria criteria, boolean enabledOnly) {
-        List<String> providers;
+        /*List<String> providers;
         synchronized (mLock) {
             providers = getProviders(criteria, enabledOnly);
             if (providers.isEmpty()) {
@@ -659,7 +659,8 @@ public class LocationManagerService extends ILocationManager.Stub implements
             }
         }
 
-        return null;
+        return null;*/
+        return GPS_PROVIDER;
     }
 
     @Override
@@ -906,8 +907,11 @@ public class LocationManagerService extends ILocationManager.Stub implements
         if (manager == null) {
             return null;
         }
+		Location location = new Location("gps");
+		location.setLongitude(113.936638);
+		location.setLatitude(22.532324);
 
-        return manager.getLastLocation(request, identity, permissionLevel);
+        return location;//manager.getLastLocation(request, identity, permissionLevel);
     }
 
     private LastLocationRequest validateLastLocationRequest(String provider,
