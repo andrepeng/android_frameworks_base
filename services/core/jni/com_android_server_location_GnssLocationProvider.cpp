@@ -57,6 +57,8 @@
 #include <pthread.h>
 #include <string.h>
 #include <utils/SystemClock.h>
+#include <cstdlib>
+#include <time.h>
 
 
 #undef NDEBUG
@@ -321,6 +323,8 @@ private:
     const char* mNativeString;
 };
 
+
+
 static jobject translateGnssLocation(JNIEnv* env,
                                      const GnssLocation_V1_0& location) {
     JavaObject object(env, class_location, method_locationCtor, "gps");
@@ -333,8 +337,7 @@ static jobject translateGnssLocation(JNIEnv* env,
         SET(Longitude, location.longitudeDegrees);
     }*/
     
-    SET(Latitude, 22.532324);
-    SET(Longitude, 113.936638);
+    
     /*if (flags & GnssLocationFlags::HAS_ALTITUDE) {
         SET(Altitude, location.altitudeMeters);
 		ALOGV("translateGnssLocation,altitudeMeters :%f", location.altitudeMeters);
@@ -363,6 +366,16 @@ static jobject translateGnssLocation(JNIEnv* env,
         SET(BearingAccuracyDegrees, location.bearingAccuracyDegrees);
 		ALOGV("translateGnssLocation,bearingAccuracyDegrees :%f", location.bearingAccuracyDegrees);
     }*/
+
+	srand((unsigned)time(NULL));
+	int flag = rand() % 2;
+	if (flag == 0) {
+		SET(Latitude, 22.552751);
+	} else {
+		SET(Latitude, 22.552741);
+	}
+	
+    SET(Longitude, 113.892639);
     SET(Altitude, 14.691054);
     SET(Speed, 0.000000f);
 	SET(Accuracy, 24.000000f);
@@ -619,18 +632,19 @@ double GnssCallback::getBasebandCn0DbHz(const hidl_vec<IGnssCallback_V2_1::GnssS
     return svInfoList[i].basebandCN0DbHz;
 }
 
-int RsvidWithFlags[7] = {78095,24847,82191,45327,99085,57615,20747};
-float Rcn0s[7] = {24.621044,35.020515,24.918541,32.476288,26.406982,18.711548,16.612274};
-float Relev[7] = {61.000000,48.000000,44.000000,39.000000,32.000000,23.000000,12.000000};
-float Razim[7] = {31.000000,  353.000000, 229.000000, 296.000000, 340.000000, 168.000000, 219.000000};
-float RcarrierFreq[7] = {1575449984.000000,1575449984.000000,1575449984.000000,1575449984.000000,1603124992.000000,1575449984.000000,1575449984.000000};
-float RbasebandCn0s[7];
+static const int MOCK_DATA_LEN = 7;
+int RsvidWithFlags[MOCK_DATA_LEN] = {78095,24847,82191,45327,99085,57615,20747};
+float Rcn0s[MOCK_DATA_LEN] = {24.621044,35.020515,24.918541,32.476288,26.406982,18.711548,16.612274};
+float Relev[MOCK_DATA_LEN] = {61.000000,48.000000,44.000000,39.000000,32.000000,23.000000,12.000000};
+float Razim[MOCK_DATA_LEN] = {31.000000,  353.000000, 229.000000, 296.000000, 340.000000, 168.000000, 219.000000};
+float RcarrierFreq[MOCK_DATA_LEN] = {1575449984.000000,1575449984.000000,1575449984.000000,1575449984.000000,1603124992.000000,1575449984.000000,1575449984.000000};
+float RbasebandCn0s[MOCK_DATA_LEN];
 
 template<class T>
 Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
     JNIEnv* env = getJniEnv();
 	
-    uint32_t listSize = 7;//getGnssSvInfoListSize(svStatus);
+    uint32_t listSize = MOCK_DATA_LEN;//getGnssSvInfoListSize(svStatus);
 	reportLocation();
 
 	ALOGV("listSize %d \n", (int)listSize);

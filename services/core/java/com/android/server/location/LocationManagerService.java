@@ -907,11 +907,8 @@ public class LocationManagerService extends ILocationManager.Stub implements
         if (manager == null) {
             return null;
         }
-		Location location = new Location("gps");
-		location.setLongitude(113.936638);
-		location.setLatitude(22.532324);
 
-        return location;//manager.getLastLocation(request, identity, permissionLevel);
+        return manager.getLastLocation(request, identity, permissionLevel);
     }
 
     private LastLocationRequest validateLastLocationRequest(String provider,
