@@ -1391,7 +1391,7 @@ public class GnssLocationProvider extends AbstractLocationProvider implements
         if (VERBOSE) Log.v(TAG, "reportLocation " + location.toString());
 
         location.setExtras(mLocationExtras.getBundle());
-
+        location.makeComplete();
         reportLocation(location);
 
         if (mStarted) {
