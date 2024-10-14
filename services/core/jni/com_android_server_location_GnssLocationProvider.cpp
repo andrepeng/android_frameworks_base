@@ -49,12 +49,6 @@
 #include <string.h>
 #include <utils/SystemClock.h>
 
-#include <cstdlib>
-#include <time.h>
-#include <cutils/properties.h>
-
-#undef NDEBUG
-
 static jclass class_gnssMeasurementsEvent;
 static jclass class_gnssMeasurement;
 static jclass class_location;
@@ -277,29 +271,10 @@ namespace android {
 
 namespace {
 
-bool isFakeLocEnable() {
-    char propBuf[PROPERTY_VALUE_MAX];
-    property_get("sys.iandroid.fakeLocEnable", propBuf, "0");
-    bool fakeLocEnable = false;
-    if (strcmp(propBuf, "1") == 0) {
-        ALOGD("fakeLocEnable is true");
-        fakeLocEnable = true;
-    } else {
-        ALOGD("fakeLocEnable is false");
-        fakeLocEnable = false;
-    }
-    return fakeLocEnable;
-}
-
 // Returns true if location has lat/long information.
 bool hasLatLong(const GnssLocation_V1_0& location) {
-    if (isFakeLocEnable()) {
-        return true;
-    } else {
-        return (static_cast<uint32_t>(location.gnssLocationFlags) &
-                    GnssLocationFlags::HAS_LAT_LONG) != 0;
-    }
-
+    return (static_cast<uint32_t>(location.gnssLocationFlags) &
+            GnssLocationFlags::HAS_LAT_LONG) != 0;
 }
 
 // Returns true if location has lat/long information.
@@ -557,62 +532,33 @@ static JNIEnv* getJniEnv() {
 static jobject translateGnssLocation(JNIEnv* env,
                                      const GnssLocation_V1_0& location) {
     JavaObject object(env, class_location, method_locationCtor, "gps");
-    if (isFakeLocEnable()) {
-        char longitudeBuf[PROPERTY_VALUE_MAX];
-        property_get("sys.iandroid.longitude", longitudeBuf, "0");
-        double longitude = std::atof(longitudeBuf);
 
-        char latitudeBuf[PROPERTY_VALUE_MAX];
-        property_get("sys.iandroid.latitude", latitudeBuf, "0");
-        double latitude = std::atof(latitudeBuf);
-
-        if (strcmp(longitudeBuf, "0") == 0 || strcmp(latitudeBuf, "0") == 0) {
-            ALOGE("longitude or latitude is 0");
-            return object.get();
-        }
-        /*srand((unsigned)time(NULL));
-        int flag = rand() % 2;
-        if (flag == 0) {
-            SET(Latitude, 22.552751);
-        } else {
-            SET(Latitude, 22.552741);
-        }*/
-        SET(Latitude, latitude);
-        SET(Longitude, longitude);
-        SET(Altitude, 14.691054);
-        SET(Speed, 0.000000f);
-        SET(Accuracy, 24.000000f);
-        SET(VerticalAccuracyMeters, 34.012081f);
-        SET(SpeedAccuracyMetersPerSecond, 20.000000f);
-    } else {
-        uint16_t flags = static_cast<uint32_t>(location.gnssLocationFlags);
-        if (flags & GnssLocationFlags::HAS_LAT_LONG) {
-            SET(Latitude, location.latitudeDegrees);
-            SET(Longitude, location.longitudeDegrees);
-        }
-        if (flags & GnssLocationFlags::HAS_ALTITUDE) {
-            SET(Altitude, location.altitudeMeters);
-        }
-        if (flags & GnssLocationFlags::HAS_SPEED) {
-            SET(Speed, location.speedMetersPerSec);
-        }
-        if (flags & GnssLocationFlags::HAS_BEARING) {
-            SET(Bearing, location.bearingDegrees);
-        }
-        if (flags & GnssLocationFlags::HAS_HORIZONTAL_ACCURACY) {
-            SET(Accuracy, location.horizontalAccuracyMeters);
-        }
-        if (flags & GnssLocationFlags::HAS_VERTICAL_ACCURACY) {
-            SET(VerticalAccuracyMeters, location.verticalAccuracyMeters);
-        }
-        if (flags & GnssLocationFlags::HAS_SPEED_ACCURACY) {
-            SET(SpeedAccuracyMetersPerSecond, location.speedAccuracyMetersPerSecond);
-        }
-        if (flags & GnssLocationFlags::HAS_BEARING_ACCURACY) {
-            SET(BearingAccuracyDegrees, location.bearingAccuracyDegrees);
-        }
+    uint16_t flags = static_cast<uint32_t>(location.gnssLocationFlags);
+    if (flags & GnssLocationFlags::HAS_LAT_LONG) {
+        SET(Latitude, location.latitudeDegrees);
+        SET(Longitude, location.longitudeDegrees);
     }
-
+    if (flags & GnssLocationFlags::HAS_ALTITUDE) {
+        SET(Altitude, location.altitudeMeters);
+    }
+    if (flags & GnssLocationFlags::HAS_SPEED) {
+        SET(Speed, location.speedMetersPerSec);
+    }
+    if (flags & GnssLocationFlags::HAS_BEARING) {
+        SET(Bearing, location.bearingDegrees);
+    }
+    if (flags & GnssLocationFlags::HAS_HORIZONTAL_ACCURACY) {
+        SET(Accuracy, location.horizontalAccuracyMeters);
+    }
+    if (flags & GnssLocationFlags::HAS_VERTICAL_ACCURACY) {
+        SET(VerticalAccuracyMeters, location.verticalAccuracyMeters);
+    }
+    if (flags & GnssLocationFlags::HAS_SPEED_ACCURACY) {
+        SET(SpeedAccuracyMetersPerSecond, location.speedAccuracyMetersPerSecond);
+    }
+    if (flags & GnssLocationFlags::HAS_BEARING_ACCURACY) {
+        SET(BearingAccuracyDegrees, location.bearingAccuracyDegrees);
+    }
     SET(Time, location.timestamp);
     SET(ElapsedRealtimeNanos, android::elapsedRealtimeNano());
 
@@ -808,28 +754,6 @@ Return<void> GnssCallback::gnssLocationCbImpl(const T& location) {
     return Void();
 }
 
-void reportLocation() {
-    if (!isFakeLocEnable()) {
-        return;
-    }
-    JNIEnv* env = getJniEnv();
-	ALOGV("-----reportLocation-----");
-	GnssLocation_V1_0 location;
-
-    jobject jLocation = translateGnssLocation(env, location);
-
-    env->CallVoidMethod(mCallbacksObj,
-                        method_reportLocation,
-                        boolToJbool(true),
-                        jLocation);
-
-    checkAndClearExceptionFromCallback(env, __FUNCTION__);
-    env->DeleteLocalRef(jLocation);
-
-}
-
-
-
 Return<void> GnssCallback::gnssLocationCb(const GnssLocation_V1_0& location) {
     return gnssLocationCbImpl<GnssLocation_V1_0>(location);
 }
@@ -858,26 +782,11 @@ double GnssCallback::getBasebandCn0DbHz(const hidl_vec<IGnssCallback_V2_1::GnssS
     return svInfoList[i].basebandCN0DbHz;
 }
 
-static const int MOCK_DATA_LEN = 7;
-int RsvidWithFlags[MOCK_DATA_LEN] = {78095,24847,82191,45327,99085,57615,20747};
-float Rcn0s[MOCK_DATA_LEN] = {24.621044,35.020515,24.918541,32.476288,26.406982,18.711548,16.612274};
-float Relev[MOCK_DATA_LEN] = {61.000000,48.000000,44.000000,39.000000,32.000000,23.000000,12.000000};
-float Razim[MOCK_DATA_LEN] = {31.000000,  353.000000, 229.000000, 296.000000, 340.000000, 168.000000, 219.000000};
-float RcarrierFreq[MOCK_DATA_LEN] = {1575449984.000000,1575449984.000000,1575449984.000000,1575449984.000000,1603124992.000000,1575449984.000000,1575449984.000000};
-float RbasebandCn0s[MOCK_DATA_LEN];
-
 template<class T>
 Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
     JNIEnv* env = getJniEnv();
-    uint32_t listSize = 0;
-    bool fakeLocEnable = isFakeLocEnable();
-    if (fakeLocEnable) {
-        ALOGD("gnssSvStatusCbImpl,fakeLocEnable is true");
-        listSize = MOCK_DATA_LEN;
-        reportLocation();
-    } else {
-        listSize = getGnssSvInfoListSize(svStatus);
-    }
+
+    uint32_t listSize = getGnssSvInfoListSize(svStatus);
 
     jintArray svidWithFlagArray = env->NewIntArray(listSize);
     jfloatArray cn0Array = env->NewFloatArray(listSize);
@@ -893,8 +802,6 @@ Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
     jfloat* carrierFreq = env->GetFloatArrayElements(carrierFreqArray, 0);
     jfloat* basebandCn0s = env->GetFloatArrayElements(basebandCn0Array, 0);
 
-
-    srand((unsigned)time(NULL));
     /*
      * Read GNSS SV info.
      */
@@ -903,27 +810,17 @@ Return<void> GnssCallback::gnssSvStatusCbImpl(const T& svStatus) {
             SVID_SHIFT_WIDTH = 12,
             CONSTELLATION_TYPE_SHIFT_WIDTH = 8
         };
-        int index = rand() % 7;
-        if (fakeLocEnable) {
-            svidWithFlags[i] = RsvidWithFlags[index];
-            cn0s[i] = Rcn0s[index];//info.cN0Dbhz;
-            elev[i] = Relev[index];//info.elevationDegrees;
-            azim[i] = Razim[index];//info.azimuthDegrees;
-            carrierFreq[i] = RcarrierFreq[index];//info.carrierFrequencyHz;
-            //svidWithFlags[i] |= 65535;//getHasBasebandCn0DbHzFlag(svStatus);
-            basebandCn0s[i] = RbasebandCn0s[index];//getBasebandCn0DbHz(svStatus, i);
-        } else {
-            const IGnssCallback_V1_0::GnssSvInfo& info = getGnssSvInfoOfIndex(svStatus, i);
-            svidWithFlags[i] = (info.svid << SVID_SHIFT_WIDTH) |
-                (getConstellationType(svStatus, i) << CONSTELLATION_TYPE_SHIFT_WIDTH) |
-                static_cast<uint32_t>(info.svFlag);
-            cn0s[i] = info.cN0Dbhz;
-            elev[i] = info.elevationDegrees;
-            azim[i] = info.azimuthDegrees;
-            carrierFreq[i] = info.carrierFrequencyHz;
-            svidWithFlags[i] |= getHasBasebandCn0DbHzFlag(svStatus);
-            basebandCn0s[i] = getBasebandCn0DbHz(svStatus, i);
-        }
+
+        const IGnssCallback_V1_0::GnssSvInfo& info = getGnssSvInfoOfIndex(svStatus, i);
+        svidWithFlags[i] = (info.svid << SVID_SHIFT_WIDTH) |
+            (getConstellationType(svStatus, i) << CONSTELLATION_TYPE_SHIFT_WIDTH) |
+            static_cast<uint32_t>(info.svFlag);
+        cn0s[i] = info.cN0Dbhz;
+        elev[i] = info.elevationDegrees;
+        azim[i] = info.azimuthDegrees;
+        carrierFreq[i] = info.carrierFrequencyHz;
+        svidWithFlags[i] |= getHasBasebandCn0DbHzFlag(svStatus);
+        basebandCn0s[i] = getBasebandCn0DbHz(svStatus, i);
     }
 
     env->ReleaseIntArrayElements(svidWithFlagArray, svidWithFlags, 0);
@@ -2644,7 +2541,6 @@ static jboolean android_location_GnssLocationProvider_start(JNIEnv* /* env */, j
     }
 
     auto result = gnssHal->start();
-    reportLocation();
     return checkHidlReturn(result, "IGnss start() failed.");
 }
 
