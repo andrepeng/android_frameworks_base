@@ -2598,6 +2598,10 @@ class DatabaseHelper extends SQLiteOpenHelper {
             }
             loadSetting(stmt, Settings.Global.LID_BEHAVIOR, defaultLidBehavior);
 
+            loadStringSetting(stmt, Settings.Global.CAPTIVE_PORTAL_HTTPS_URL, R.string.captive_portal_https_url);
+            loadStringSetting(stmt, Settings.Global.CAPTIVE_PORTAL_HTTP_URL, R.string.captive_portal_http_url);
+            loadStringSetting(stmt, Settings.Global.NTP_SERVER, R.string.ntp_server);
+
             /*
              * IMPORTANT: Do not add any more upgrade steps here as the global,
              * secure, and system settings are no longer stored in a database

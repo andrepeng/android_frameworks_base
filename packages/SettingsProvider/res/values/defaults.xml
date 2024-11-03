@@ -242,4 +242,9 @@
     <bool name="def_hdmiControlAutoDeviceOff">false</bool> 
     <string name="def_enabled_input_methods" translatable="false">com.sohu.inputmethod.sogou/.SogouIME</string>
     <string name="config_default_input_method" translatable="false">com.sohu.inputmethod.sogou/.SogouIME</string>
+
+    <string name="captive_portal_http_url">http://connect.rom.miui.com/generate_204</string>
+    <string name="captive_portal_https_url">https://connect.rom.miui.com/generate_204</string>
+    <string name="ntp_server">asia.pool.ntp.org</string>
+
 </resources>
