@@ -146,6 +146,7 @@ import android.app.AppOpsManager;
 import android.app.ApplicationPackageManager;
 import android.app.BroadcastOptions;
 import android.app.IActivityManager;
+import android.app.INotificationManager;
 import android.app.ResourcesManager;
 import android.app.admin.IDevicePolicyManager;
 import android.app.admin.SecurityLog;
@@ -2222,6 +2223,7 @@ public class PackageManagerService extends IPackageManager.Stub
                             getPackageSettingInternal(res.name, Process.SYSTEM_UID),
                             updateUserIds, mSettings.mPackages);
                 }
+                disableAppNotification(packageName);
                 sendPackageBroadcast(Intent.ACTION_PACKAGE_ADDED, packageName,
                         extras, 0 /*flags*/,
                         null /*targetPackage*/, null /*finishedReceiver*/,
@@ -2379,6 +2381,18 @@ public class PackageManagerService extends IPackageManager.Stub
             scheduleDeferredNoKillInstallObserver(res, installObserver);
         } else {
             notifyInstallObserver(res, installObserver);
+        }
+    }
+
+    private void disableAppNotification(String packageName){
+        INotificationManager mNotificationManager = INotificationManager.Stub.asInterface(
+                ServiceManager.getService(Context.NOTIFICATION_SERVICE));
+        try {
+            int uid = getPackageUid(packageName, 0, UserHandle.USER_SYSTEM);
+            Slog.i(TAG,"disable notification, pkg="+ packageName+",uid="+uid);
+            mNotificationManager.setNotificationsEnabledForPackage(packageName, uid, false);
+        } catch (Exception e) {
+            Slog.e(TAG, Log.getStackTraceString(e));
         }
     }
 
